@@ -19,6 +19,8 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { mockDrones } from '../utils/mockData';
 import { Drone, Zap, Plus, X } from 'lucide-react-native';
 import { BatteryIcon } from '../components/BatteryIcon';
+import { AISLogo } from '../components/AISLogo';
+import { CopyrightFooter } from '../components/CopyrightFooter';
 import { registerDrone, fetchDroneList, updateDroneConnectTime } from '../utils/api';
 
 export const DroneListScreen = ({ navigation }) => {
@@ -110,12 +112,28 @@ export const DroneListScreen = ({ navigation }) => {
   };
 
   const handleSelectDrone = async (drone) => {
-    // 접속 시간 업데이트
-    await updateDroneConnectTime(drone.drone_name);
+    try {
+      // 접속 시간 업데이트
+      await updateDroneConnectTime(drone.drone_name);
+    } catch (error) {
+      console.error('Update connect time error:', error);
+    }
+    
     // 목록 갱신
     loadDrones();
-    // 모니터링 화면으로 이동
-    navigation.navigate('Monitoring', { drone });
+    
+    // 모니터링 화면으로 이동 (serializable 데이터만 전달)
+    const serializableDrone = {
+      drone_db_id: drone.drone_db_id || drone.id,
+      drone_name: drone.drone_name || drone.name,
+      drone_lat: drone.drone_lat,
+      drone_lon: drone.drone_lon,
+      drone_connect_time: drone.drone_connect_time ? drone.drone_connect_time.toString() : null,
+      status: drone.status,
+      battery: drone.battery,
+    };
+    
+    navigation.navigate('Monitoring', { drone: serializableDrone });
   };
 
   const renderDroneItem = ({ item }) => {
@@ -168,8 +186,14 @@ export const DroneListScreen = ({ navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>드론 목록</Text>
+      <View style={[styles.headerContainer, { paddingTop: Math.max(insets.top, 20) }]}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>드론 목록</Text>
+          {/* AIS 로고 - 헤더 텍스트와 같은 높이 */}
+          <View style={styles.topLogoContainer}>
+            <AISLogo size={16} color="#2196F3" />
+          </View>
+        </View>
       </View>
       <FlatList
         data={drones}
@@ -181,6 +205,7 @@ export const DroneListScreen = ({ navigation }) => {
             <Text style={styles.emptyText}>등록된 드론이 없습니다.</Text>
           </View>
         }
+        ListFooterComponent={<CopyrightFooter />}
       />
       
       {/* 플로팅 액션 버튼 */}
@@ -250,10 +275,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+  headerContainer: {
+    position: 'relative',
+  },
   header: {
     padding: 20,
+    paddingTop: 12,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  topLogoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 28,

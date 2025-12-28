@@ -20,6 +20,8 @@ import { mockDetectionHistory } from '../utils/mockData';
 import { fetchDetectionHistory, fetchDroneLogs } from '../utils/api';
 import { getDangerLevel } from '../utils/weather';
 import { DetectionDetailModal } from '../components/DetectionDetailModal';
+import { AISLogo } from '../components/AISLogo';
+import { CopyrightFooter } from '../components/CopyrightFooter';
 import { Calendar } from 'lucide-react-native';
 
 export const InquiryScreen = ({ route, navigation }) => {
@@ -173,8 +175,14 @@ export const InquiryScreen = ({ route, navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>조회</Text>
+      <View style={[styles.headerContainer, { paddingTop: Math.max(insets.top, 20) }]}>
+        <View style={styles.header}>
+          <Text style={styles.headerTitle}>조회</Text>
+          {/* AIS 로고 - 헤더 텍스트와 같은 높이 */}
+          <View style={styles.topLogoContainer}>
+            <AISLogo size={16} color="#2196F3" />
+          </View>
+        </View>
       </View>
 
       {/* 날짜 선택 버튼 */}
@@ -208,6 +216,7 @@ export const InquiryScreen = ({ route, navigation }) => {
           keyExtractor={(item) => item.id.toString()}
           contentContainerStyle={[styles.listContainer, { paddingBottom: Math.max(insets.bottom, 20) }]}
           showsVerticalScrollIndicator={false}
+          ListFooterComponent={<CopyrightFooter />}
         />
       )}
 
@@ -271,10 +280,22 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#FFFFFF',
   },
+  headerContainer: {
+    position: 'relative',
+  },
   header: {
     padding: 20,
+    paddingTop: 12,
+    paddingBottom: 12,
     borderBottomWidth: 1,
     borderBottomColor: '#F0F0F0',
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  topLogoContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   headerTitle: {
     fontSize: 28,

@@ -19,12 +19,14 @@ import { mockDetectionLogs, mockVideoUrls } from '../utils/mockData';
 import { fetchStreamVideoUrl, fetchRealtimeDetection, fetchDroneLogs, fetchLivePhotos } from '../utils/api';
 import { DetectionCard } from '../components/DetectionCard';
 import { DetectionDetailModal } from '../components/DetectionDetailModal';
+import { AISLogo } from '../components/AISLogo';
+import { CopyrightFooter } from '../components/CopyrightFooter';
 import { AlertTriangle, Bell } from 'lucide-react-native';
 import { format } from 'date-fns';
 import { ko } from 'date-fns/locale/ko';
 
 export const MonitoringScreen = ({ route, navigation }) => {
-  const { drone } = route.params;
+  const { drone } = route.params || {};
   const insets = useSafeAreaInsets();
   const [location, setLocation] = useState(null);
   const [streamUrl, setStreamUrl] = useState(null);
@@ -37,7 +39,20 @@ export const MonitoringScreen = ({ route, navigation }) => {
   const [livePhotos, setLivePhotos] = useState([]);
 
   useEffect(() => {
-    initializeScreen();
+    // 타임아웃 추가: 최대 5초 후에는 로딩 해제
+    const timeout = setTimeout(() => {
+      if (loading) {
+        console.warn('Initialize screen timeout, forcing loading to false');
+        setLoading(false);
+      }
+    }, 5000);
+
+    initializeScreen().catch((error) => {
+      console.error('Initialize screen failed:', error);
+      setLoading(false);
+    });
+
+    return () => clearTimeout(timeout);
   }, []);
 
   // 로그 및 라이브 포토 폴링
@@ -226,6 +241,17 @@ export const MonitoringScreen = ({ route, navigation }) => {
     );
   }
 
+  // drone이 없으면 로딩 상태 유지
+  if (!drone) {
+    return (
+      <SafeAreaView style={styles.container}>
+        <View style={styles.loadingContainer}>
+          <ActivityIndicator size="large" color="#000" />
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   // 로그 데이터 처리 (서버 데이터 우선, 없으면 모의 데이터)
   const droneDbId = drone.drone_db_id || drone.id;
   const droneName = drone.drone_name || drone.name;
@@ -253,24 +279,38 @@ export const MonitoringScreen = ({ route, navigation }) => {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-        {/* 헤더 - 뒤로 버튼, GPS, 드론 이름, 경고 배지 */}
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingTop: Math.max(insets.top, 20) }}
+      >
+        {/* 헤더 - 뒤로 버튼, 드론 이름, 경고 배지 */}
         <View style={styles.header}>
           <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
             <Text style={styles.backButtonText}>‹</Text>
           </TouchableOpacity>
           <View style={styles.headerCenter}>
-            <Text style={styles.gpsText}>
-              {location?.latitude.toFixed(2)}, {location?.longitude.toFixed(2)}
-            </Text>
             <Text style={styles.headerTitle}>{drone.drone_name || drone.name}</Text>
           </View>
-          {dangerLevel && dangerLevel.level === 'danger' && (
-            <View style={styles.warningBadge}>
-              <AlertTriangle size={14} color="#FFFFFF" />
-              <Text style={styles.warningText}>WARNING: HIGH RISK</Text>
+          <View style={styles.headerRight}>
+            {dangerLevel && dangerLevel.level === 'danger' && (
+              <View style={styles.warningBadge}>
+                <AlertTriangle size={14} color="#FFFFFF" />
+                <Text style={styles.warningText}>WARNING: HIGH RISK</Text>
+              </View>
+            )}
+            {/* AIS 로고 - 경고 배지 옆에 배치 */}
+            <View style={styles.headerLogo}>
+              <AISLogo size={14} color="#2196F3" />
             </View>
-          )}
+          </View>
+        </View>
+
+        {/* GPS 정보 - 헤더 아래로 이동 */}
+        <View style={styles.gpsContainer}>
+          <Text style={styles.gpsText}>
+            {location?.latitude.toFixed(2)}, {location?.longitude.toFixed(2)}
+          </Text>
         </View>
 
         {/* 날씨 정보 */}
@@ -389,6 +429,9 @@ export const MonitoringScreen = ({ route, navigation }) => {
             <Bell size={16} color="#FFFFFF" />
             <Text style={styles.simulateButtonText}>Simulate Fire</Text>
           </TouchableOpacity>
+
+          {/* 저작권 표시 */}
+          <CopyrightFooter />
         </View>
       </ScrollView>
 
@@ -420,10 +463,12 @@ const styles = StyleSheet.create({
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'flex-start',
+    alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 20,
+    paddingHorizontal: 20,
+    paddingTop: 8,
     paddingBottom: 12,
+    minHeight: 50,
   },
   backButton: {
     padding: 4,
@@ -437,15 +482,27 @@ const styles = StyleSheet.create({
     flex: 1,
     alignItems: 'center',
   },
-  gpsText: {
-    fontSize: 12,
-    color: '#8E8E93',
-    marginBottom: 4,
-  },
   headerTitle: {
     fontSize: 22,
     fontWeight: '700',
     color: '#000',
+  },
+  headerRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  headerLogo: {
+    marginLeft: 4,
+  },
+  gpsContainer: {
+    alignItems: 'center',
+    paddingBottom: 12,
+    paddingHorizontal: 20,
+  },
+  gpsText: {
+    fontSize: 12,
+    color: '#8E8E93',
   },
   warningBadge: {
     flexDirection: 'row',

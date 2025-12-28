@@ -182,8 +182,8 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   probabilityValue: {
-    fontSize: 20,
-    fontWeight: '700',
+    fontSize: 16,
+    fontWeight: '600',
   },
   criticalBadge: {
     backgroundColor: '#FF3B3015',
